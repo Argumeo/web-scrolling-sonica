@@ -87,6 +87,13 @@
     #hero-video {
       width: 100%; height: 100%; object-fit: contain; display: block;
     }
+    @media (max-width: 768px) {
+      #hero-video {
+        width: 56.25vh;
+        height: 100vh;
+        object-fit: cover;
+      }
+    }
     .hero-overlay {
       position: absolute; inset: 0;
       background: linear-gradient(
