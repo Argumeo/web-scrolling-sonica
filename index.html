@@ -88,14 +88,8 @@
       width: 100%; height: 100%; object-fit: contain; display: block;
     }
     @media (max-width: 768px) {
-      #inicio {
-        height: 100vh;
-      }
-      #hero-video {
-        width: 56.25vh;
-        height: 100vh;
-        object-fit: cover;
-      }
+      #inicio { height: 300vh; }
+      #hero-video { width: 100%; height: 100%; object-fit: cover; }
     }
     .hero-overlay {
       position: absolute; inset: 0;
@@ -410,7 +404,8 @@
 <!-- HERO VIDEO SCROLL -->
 <div id="inicio">
   <div id="hero-sticky">
-    <video id="hero-video" muted playsinline preload="auto">
+    <video id="hero-video" muted playsinline preload="auto"
+      poster="assets/482200587_3875914265961978_5125636233794854790_n.jpg">
       <source src="assets/kling_20260529_VIDEO_Image1_Ima_1735_0.mp4" type="video/mp4">
     </video>
     <div class="hero-overlay"></div>
@@ -842,37 +837,38 @@
   const met = document.getElementById('metricas');
   if (met) counterObs.observe(met);
 
-  // Video scroll (Apple-style)
+  // Video scroll (Apple-style) — funciona en desktop, laptop, tablet y móvil
   const heroVideo = document.getElementById('hero-video');
   const heroScrollSection = document.getElementById('inicio');
   const heroTextOverlay = document.querySelector('.hero-text-overlay');
-  const isMobile = window.innerWidth <= 768;
+  let videoReady = false;
 
-  if (isMobile) {
-    // En móvil: autoplay normal, texto siempre visible
-    heroVideo.setAttribute('autoplay', '');
-    heroVideo.setAttribute('loop', '');
-    heroVideo.muted = true;
-    heroVideo.play().catch(() => {});
-    if (heroTextOverlay) heroTextOverlay.style.opacity = '1';
-  } else {
-    // En desktop: efecto scroll frame a frame
-    function scrubVideo() {
-      const scrollTop = window.scrollY;
-      const maxScroll = heroScrollSection.offsetHeight - window.innerHeight;
-      const progress = Math.max(0, Math.min(scrollTop / maxScroll, 1));
-
-      if (heroVideo.readyState >= 2) {
-        heroVideo.currentTime = progress * heroVideo.duration;
-      }
-
-      const textProgress = Math.max(0, Math.min((progress - 0.65) / 0.2, 1));
-      if (heroTextOverlay) heroTextOverlay.style.opacity = textProgress;
-    }
-
-    heroVideo.addEventListener('loadedmetadata', scrubVideo);
-    window.addEventListener('scroll', scrubVideo, { passive: true });
+  function scrubVideo() {
+    const maxScroll = heroScrollSection.offsetHeight - window.innerHeight;
+    if (maxScroll <= 0 || !videoReady) return;
+    const progress = Math.max(0, Math.min(window.scrollY / maxScroll, 1));
+    heroVideo.currentTime = progress * heroVideo.duration;
+    const textProgress = Math.max(0, Math.min((progress - 0.65) / 0.2, 1));
+    if (heroTextOverlay) heroTextOverlay.style.opacity = textProgress;
   }
+
+  function makeSeekable() {
+    if (videoReady) return;
+    heroVideo.play().then(() => {
+      heroVideo.pause();
+      heroVideo.currentTime = 0;
+      videoReady = true;
+      scrubVideo();
+    }).catch(() => {});
+  }
+
+  heroVideo.addEventListener('loadedmetadata', makeSeekable);
+  // Fallback para navegadores que bloquean play() sin gesto del usuario
+  ['touchstart', 'pointerdown'].forEach(ev =>
+    document.addEventListener(ev, makeSeekable, { once: true, passive: true })
+  );
+
+  window.addEventListener('scroll', scrubVideo, { passive: true });
 
   // Google Sheets endpoint — pegá tu URL de Apps Script aquí
   const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw-_fThWMXqfgKp4TFDE4Fi0jMxvH10y1i4f5sj7oL7gHNQ1kU4cavFZBt353opekMm/exec';
