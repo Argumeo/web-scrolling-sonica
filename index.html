@@ -88,6 +88,9 @@
       width: 100%; height: 100%; object-fit: contain; display: block;
     }
     @media (max-width: 768px) {
+      #inicio {
+        height: 100vh;
+      }
       #hero-video {
         width: 56.25vh;
         height: 100vh;
@@ -843,23 +846,33 @@
   const heroVideo = document.getElementById('hero-video');
   const heroScrollSection = document.getElementById('inicio');
   const heroTextOverlay = document.querySelector('.hero-text-overlay');
+  const isMobile = window.innerWidth <= 768;
 
-  function scrubVideo() {
-    const scrollTop = window.scrollY;
-    const maxScroll = heroScrollSection.offsetHeight - window.innerHeight;
-    const progress = Math.max(0, Math.min(scrollTop / maxScroll, 1));
+  if (isMobile) {
+    // En móvil: autoplay normal, texto siempre visible
+    heroVideo.setAttribute('autoplay', '');
+    heroVideo.setAttribute('loop', '');
+    heroVideo.muted = true;
+    heroVideo.play().catch(() => {});
+    if (heroTextOverlay) heroTextOverlay.style.opacity = '1';
+  } else {
+    // En desktop: efecto scroll frame a frame
+    function scrubVideo() {
+      const scrollTop = window.scrollY;
+      const maxScroll = heroScrollSection.offsetHeight - window.innerHeight;
+      const progress = Math.max(0, Math.min(scrollTop / maxScroll, 1));
 
-    if (heroVideo.readyState >= 2) {
-      heroVideo.currentTime = progress * heroVideo.duration;
+      if (heroVideo.readyState >= 2) {
+        heroVideo.currentTime = progress * heroVideo.duration;
+      }
+
+      const textProgress = Math.max(0, Math.min((progress - 0.65) / 0.2, 1));
+      if (heroTextOverlay) heroTextOverlay.style.opacity = textProgress;
     }
 
-    // Texto aparece a partir del 65% del scroll
-    const textProgress = Math.max(0, Math.min((progress - 0.65) / 0.2, 1));
-    if (heroTextOverlay) heroTextOverlay.style.opacity = textProgress;
+    heroVideo.addEventListener('loadedmetadata', scrubVideo);
+    window.addEventListener('scroll', scrubVideo, { passive: true });
   }
-
-  heroVideo.addEventListener('loadedmetadata', scrubVideo);
-  window.addEventListener('scroll', scrubVideo, { passive: true });
 
   // Google Sheets endpoint — pegá tu URL de Apps Script aquí
   const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw-_fThWMXqfgKp4TFDE4Fi0jMxvH10y1i4f5sj7oL7gHNQ1kU4cavFZBt353opekMm/exec';
